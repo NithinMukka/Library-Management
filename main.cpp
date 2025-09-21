@@ -11,21 +11,22 @@ class Book{
     std::string author;
     bool isAvailable;
     public:
-    Book(int id, std::string bookname, std::string authorname): ISBN(std::move(id)), title(std::move(bookname)), author(std::move(authorname)) {}
+    Book(int id, std::string bookname, std::string authorname): 
+        ISBN(std::move(id)), title(std::move(bookname)), author(std::move(authorname)), isAvailable(true) {}
 
-    const int& getISBN(){
+    const int& getISBN() const{
         return ISBN;
     }
 
-    const std::string& getTitle(){
+    const std::string& getTitle() const{
         return title;
     }
 
-    const std::string& getAuthor(){
+    const std::string& getAuthor() const{
         return author;
     }
 
-    const bool& isBookAvailable(){
+    const bool& isBookAvailable() const{
         return isAvailable;
     }
 };
@@ -36,25 +37,25 @@ class Person{
     public:
     Person(std::string name, int id): name(std::move(name)), id(std::move(id)){}
 
-    const std::string& getName(){
+    const std::string& getName() const{
         return name;
     }
 
-    const int& getID(){
+    const int& getID() const{
         return id;
     }
 };
 
 class Customer: public Person{
-    std::vector<std::unique_ptr<Book>> borrowedbooks; 
+    std::vector<Book*> borrowedbooks; 
     public:
     Customer(std::string name, int id): Person(name, id){}
 
-    const std::vector<std::unique_ptr<Book>>& getBorrowedBooks(){
+    const std::vector<Book*>& getBorrowedBooks() const{
         return borrowedbooks;
     }
 
-    bool borrowBook(std::unique_ptr<Book> book){
+    bool borrowBook(Book* book){
         if(book->isBookAvailable()){
             borrowedbooks.push_back(book);
             return true;
@@ -62,7 +63,7 @@ class Customer: public Person{
         return false;
     }
 
-    std::unique_ptr<Book> returnBook(std::unique_ptr<Book> b){
+    Book* returnBook(Book* b){
         auto it = std::find_if(borrowedbooks.begin(), borrowedbooks.end(),
             [&](const std::unique_ptr<Book>& book) {
                 std::string lowerBookName = book->getTitle();
@@ -71,7 +72,7 @@ class Customer: public Person{
             });
 
         if (it != borrowedbooks.end()) {
-            std::unique_ptr<Book> foundItem = std::move(*it);
+            Book* foundItem = *it;
             borrowedbooks.erase(it);
             return foundItem;
         }
@@ -89,53 +90,51 @@ class Loan{
     Customer* customer;
     std::string dueDate;
     public:
-    Loan(std::unique_ptr<Book> b, std::unique_ptr<Customer> c, std::string date): dueDate(std::move(date)){
-        book = b.get();
-        customer = c.get();
-    }
+    Loan(Book* b, Customer* c, std::string date)
+        : book(b), customer(c), dueDate(std::move(date)) {}
 
-    const std::string& getBookName(){
+    const std::string& getBookName() const{
         return book->getTitle();
     }
 
-    const std::string& getCustomerName(){
+    const std::string& getCustomerName() const{
         return customer->getName();
     }
 
-    const std::string& getDueDate(){
+    const std::string& getDueDate() const{
         return dueDate;
     }
 };
 
 class ConsoleUI{
     public:
-    void getBookInfo(std::unique_ptr<Book> book){
-        std::cout << "\nBook ID: " << book->getISBN();
-        std::cout << "\nBook Title: " << book->getTitle();
-        std::cout << "\nBook Author: " << book->getAuthor();
-        std::cout << "\nBook Availibility: " << (book->isBookAvailable() == true) ? "Available " : "Not Available";
+    void getBookInfo(const Book& book){
+        std::cout << "\nBook ID: " << book.getISBN();
+        std::cout << "\nBook Title: " << book.getTitle();
+        std::cout << "\nBook Author: " << book.getAuthor();
+        std::cout << "\nBook Availibility: " << (book.isBookAvailable() == true) ? "Available " : "Not Available";
     }
 
-    void getCustomerInfo(std::unique_ptr<Customer> customer){
-        std::cout << "\nCustomer ID: " << customer->getID();
+    void getCustomerInfo(const Customer& customer){
+        std::cout << "\nCustomer ID: " << customer.getID();
         std::cout << "\nCustomer currently borrowed books are: ";
-        if(customer->getBorrowedBooks().size() > 0){
-            for(const auto &book: customer->getBorrowedBooks()){
+        if(customer.getBorrowedBooks().size() > 0){
+            for(const auto &book: customer.getBorrowedBooks()){
                 std::cout << book->getTitle() << " ";
             }
         }
         else std::cout << "\nNone";
     }
 
-    void getLoanInfo(std::unique_ptr<Loan> loan){
-        std::cout << "\nBorrowed book: " << loan->getBookName();
-        std::cout << "\nBorrowed customer: " << loan->getCustomerName();
-        std::cout << "\nDue date " << loan->getDueDate();
+    void getLoanInfo(const Loan& loan){
+        std::cout << "\nBorrowed book: " << loan.getBookName();
+        std::cout << "\nBorrowed customer: " << loan.getCustomerName();
+        std::cout << "\nDue date " << loan.getDueDate();
     }
 
-    void getStaffInfo(std::unique_ptr<Staff> staff){
-        std::cout << "\nStaff ID: " << staff->getID();
-        std::cout << "\nStaff name: " << staff->getName();
+    void getStaffInfo(const Staff& staff){
+        std::cout << "\nStaff ID: " << staff.getID();
+        std::cout << "\nStaff name: " << staff.getName();
     }
 };
 
@@ -146,5 +145,5 @@ class Library{
     std::vector<std::unique_ptr<Loan>> loans;
     ConsoleUI view;
     public:
-    
+
 };
