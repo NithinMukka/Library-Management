@@ -15,6 +15,9 @@ This application simulates the core functionalities of a library. It allows a us
 - **Clear User Interface**: A simple and intuitive command-line menu for easy interaction.
 - **Robust Error Handling**: Provides clear, specific feedback to the user for invalid operations (e.g., book not found, customer does not exist, book is already on loan).
 
+## Class Diagram
+![library_class.png](https://raw.githubusercontent.com/NithinMukka/Library-Management/main/library_class.png)
+
 ## Object-Oriented Programming (OOP) Concepts Applied
 
 This project heavily utilizes fundamental OOP concepts:
