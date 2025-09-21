@@ -4,14 +4,11 @@
 #include <memory>
 #include <algorithm>
 #include <utility>
-#include <limits> // Required for numeric_limits
+#include <limits>
 
-// Forward declarations to resolve circular dependencies if needed later
+// Forward declarations
 class Book;
 class Customer;
-class Staff;
-class Loan;
-class Library;
 
 // ===================================================================
 // Book Class
@@ -25,45 +22,25 @@ public:
     Book(int id, std::string bookname, std::string authorname):
         ISBN(id), title(std::move(bookname)), author(std::move(authorname)), isAvailable(true) {}
 
-    int getISBN() const {
-        return ISBN;
-    }
-
-    const std::string& getTitle() const {
-        return title;
-    }
-
-    const std::string& getAuthor() const {
-        return author;
-    }
-
-    bool isBookAvailable() const {
-        return isAvailable;
-    }
-
-    void setAvailability(bool available) {
-        isAvailable = available;
-    }
+    int getISBN() const { return ISBN; }
+    const std::string& getTitle() const { return title; }
+    const std::string& getAuthor() const { return author; }
+    bool isBookAvailable() const { return isAvailable; }
+    void setAvailability(bool available) { isAvailable = available; }
 };
 
 // ===================================================================
 // Person Hierarchy
 // ===================================================================
 class Person{
-protected: // Use protected so derived classes can access if needed, but it's better to use public getters
+protected:
     std::string name;
     int id;
 public:
     Person(std::string name, int id): name(std::move(name)), id(id){}
-    virtual ~Person() = default; // Virtual destructor for base class
-
-    const std::string& getName() const {
-        return name;
-    }
-
-    int getID() const {
-        return id;
-    }
+    virtual ~Person() = default;
+    const std::string& getName() const { return name; }
+    int getID() const { return id; }
 };
 
 class Customer: public Person{
@@ -71,18 +48,9 @@ class Customer: public Person{
 public:
     Customer(std::string name, int id): Person(name, id){}
 
-    const std::vector<Book*>& getBorrowedBooks() const {
-        return borrowedbooks;
-    }
-
-    // Simplified borrowBook as per our discussion
-    void borrowBook(Book* book){
-        borrowedbooks.push_back(book);
-    }
-
-    // Implementation for returning a book
+    const std::vector<Book*>& getBorrowedBooks() const { return borrowedbooks; }
+    void borrowBook(Book* book){ borrowedbooks.push_back(book); }
     void returnBook(Book* b){
-        // Find the book in the vector and remove it
         auto it = std::find(borrowedbooks.begin(), borrowedbooks.end(), b);
         if (it != borrowedbooks.end()) {
             borrowedbooks.erase(it);
@@ -108,18 +76,9 @@ public:
 
     Book* getBook() const { return book; }
     Customer* getCustomer() const { return customer; }
-
-    const std::string& getBookName() const {
-        return book->getTitle();
-    }
-
-    const std::string& getCustomerName() const {
-        return customer->getName();
-    }
-
-    const std::string& getDueDate() const {
-        return dueDate;
-    }
+    const std::string& getBookName() const { return book->getTitle(); }
+    const std::string& getCustomerName() const { return customer->getName(); }
+    const std::string& getDueDate() const { return dueDate; }
 };
 
 // ===================================================================
@@ -147,12 +106,6 @@ public:
             std::cout << "\n  No books currently borrowed.";
         }
     }
-
-    void getLoanInfo(const Loan& loan){
-        std::cout << "\n  Book: " << loan.getBookName()
-                  << "\n  Customer: " << loan.getCustomerName()
-                  << "\n  Due Date: " << loan.getDueDate();
-    }
 };
 
 // ===================================================================
@@ -165,7 +118,6 @@ class Library{
     std::vector<std::unique_ptr<Loan>> loans;
 
 public:
-    // --- Data Management ---
     void addBook(int isbn, const std::string& title, const std::string& author) {
         books.push_back(std::make_unique<Book>(isbn, title, author));
     }
@@ -174,75 +126,76 @@ public:
         customers.push_back(std::make_unique<Customer>(name, id));
     }
 
-    // --- Finders ---
     Book* findBookByISBN(int isbn) {
-        for (const auto& book : books) {
-            if (book->getISBN() == isbn) {
-                return book.get();
-            }
-        }
+        for (const auto& book : books) { if (book->getISBN() == isbn) return book.get(); }
         return nullptr;
     }
 
     Customer* findCustomerByID(int id) {
-        for (const auto& customer : customers){
-            if (customer->getID() == id) {
-                return customer.get();
-            }
-        }
+        for (const auto& customer : customers){ if (customer->getID() == id) return customer.get(); }
         return nullptr;
     }
     
-    // --- Getters for UI ---
     const std::vector<std::unique_ptr<Book>>& getAllBooks() const { return books; }
     const std::vector<std::unique_ptr<Customer>>& getAllCustomers() const { return customers; }
 
-
-    // --- Core Business Logic ---
+    // --- REVISED Core Business Logic ---
     bool issueBook(int isbn, int customerId) {
         Book* book = findBookByISBN(isbn);
-        Customer* customer = findCustomerByID(customerId);
-
-        if (book && customer && book->isBookAvailable()) {
-            book->setAvailability(false);
-            customer->borrowBook(book);
-            // In a real app, you'd calculate a proper due date
-            loans.push_back(std::make_unique<Loan>(book, customer, "2025-10-21"));
-            return true;
-        }
-        return false;
-    }
-
-    bool returnBook(int isbn) {
-        Book* book = findBookByISBN(isbn);
-
-        // Check 1: Book must exist and must be currently on loan.
-        if (!book || book->isBookAvailable()) {
+        if (!book) {
+            std::cout << "Error: Book with ISBN " << isbn << " not found.\n";
             return false;
         }
 
-        // Find the loan record associated with this book.
-        Loan* loan_to_remove = nullptr;
+        Customer* customer = findCustomerByID(customerId);
+        if (!customer) {
+            std::cout << "Error: Customer with ID " << customerId << " not found.\n";
+            return false;
+        }
+
+        if (!book->isBookAvailable()) {
+            std::cout << "Error: Book '" << book->getTitle() << "' is currently on loan.\n";
+            return false;
+        }
+
+        book->setAvailability(false);
+        customer->borrowBook(book);
+        loans.push_back(std::make_unique<Loan>(book, customer, "2025-10-21"));
+        return true;
+    }
+
+    bool returnBook(int isbn, int customerId) {
+        Book* book = findBookByISBN(isbn);
+        if (!book) {
+            std::cout << "Error: Book with ISBN " << isbn << " not found.\n";
+            return false;
+        }
+
+        Customer* customer = findCustomerByID(customerId);
+        if (!customer) {
+            std::cout << "Error: Customer with ID " << customerId << " not found.\n";
+            return false;
+        }
+        
+        if (book->isBookAvailable()) {
+            std::cout << "Error: Book '" << book->getTitle() << "' is not currently on loan.\n";
+            return false;
+        }
+
         auto it = std::find_if(loans.begin(), loans.end(), [&](const auto& loan){
-            return loan->getBook() == book;
+            return loan->getBook() == book && loan->getCustomer() == customer;
         });
 
         if (it != loans.end()) {
-            // Get the customer from the loan record
-            Customer* customer = (*it)->getCustomer();
-
-            // Execute the return process
             customer->returnBook(book);
             book->setAvailability(true);
-            
-            // Remove the loan from the main ledger
             loans.erase(it);
-
             return true;
+        } else {
+            std::cout << "Error: No record found of customer " << customer->getName() 
+                      << " borrowing the book '" << book->getTitle() << "'.\n";
+            return false;
         }
-        
-        // If no loan record was found (data inconsistency), fail the operation.
-        return false;
     }
 };
 
@@ -257,7 +210,6 @@ int main() {
     Library library;
     ConsoleUI ui;
 
-    // --- Pre-populate data for testing ---
     library.addBook(101, "The Hobbit", "J.R.R. Tolkien");
     library.addBook(102, "1984", "George Orwell");
     library.addBook(103, "Dune", "Frank Herbert");
@@ -276,57 +228,45 @@ int main() {
         std::cout << "Enter your choice: ";
         std::cin >> choice;
         
-        // Input validation
         if(std::cin.fail()){
             std::cout << "Invalid input. Please enter a number.\n";
             std::cin.clear();
             clearInputBuffer();
-            choice = 0; // Reset choice to re-enter loop
+            choice = 0;
             continue;
         }
-
-        clearInputBuffer(); // Consume the rest of the line
+        clearInputBuffer();
 
         switch (choice) {
             case 1: {
                 std::cout << "\n--- All Books in Library ---";
-                for (const auto& book : library.getAllBooks()) {
-                    ui.getBookInfo(*book);
-                }
+                for (const auto& book : library.getAllBooks()) { ui.getBookInfo(*book); }
                 std::cout << "\n----------------------------\n";
                 break;
             }
             case 2: {
                 std::cout << "\n--- Registered Customers ---";
-                for (const auto& customer : library.getAllCustomers()) {
-                    ui.getCustomerInfo(*customer);
-                }
+                for (const auto& customer : library.getAllCustomers()) { ui.getCustomerInfo(*customer); }
                 std::cout << "\n---------------------------\n";
                 break;
             }
             case 3: {
                 int isbn, custId;
-                std::cout << "Enter Book ISBN to issue: ";
-                std::cin >> isbn;
-                std::cout << "Enter Customer ID: ";
-                std::cin >> custId;
+                std::cout << "Enter Book ISBN to issue: "; std::cin >> isbn;
+                std::cout << "Enter Customer ID: "; std::cin >> custId;
                 if(library.issueBook(isbn, custId)) {
                     std::cout << "Book issued successfully!\n";
-                } else {
-                    std::cout << "Failed to issue book. Check ISBN, Customer ID, or book availability.\n";
-                }
+                } // Error messages are now handled inside the function
                 clearInputBuffer();
                 break;
             }
-            case 4: {
-                int isbn;
-                std::cout << "Enter Book ISBN to return: ";
-                std::cin >> isbn;
-                if(library.returnBook(isbn)) {
+            case 4: { // REVISED CASE 4
+                int isbn, custId;
+                std::cout << "Enter Book ISBN to return: "; std::cin >> isbn;
+                std::cout << "Enter your Customer ID: "; std::cin >> custId;
+                if(library.returnBook(isbn, custId)) {
                     std::cout << "Book returned successfully!\n";
-                } else {
-                    std::cout << "Failed to return book. Check if the ISBN is correct and the book is on loan.\n";
-                }
+                } // Error messages are now handled inside the function
                 clearInputBuffer();
                 break;
             }
